@@ -5,7 +5,8 @@ Calcule pour chaque arrêt : nombre de passages, premier et dernier départ
 
 import gtfs_kit as gk
 import pandas as pd
-from datetime import datetime, date
+import folium
+import numpy as np
 
 # Configuration
 GTFS_ZIP_PATH = "data/TAM_MMM_GTFS.zip"  # À modifier
@@ -179,6 +180,52 @@ def exporter_resultats(df, date_str):
     print(f"\n✓ Résultats exportés dans : {output_file}")
 
 
+def carte_arrets(df):
+    # Carte des arrêts avec leur nombre de passages
+
+    # Définir les seuils pour les couleurs
+    passages_values = df["nombre_passages"].values
+    bins = np.percentile(passages_values, [0, 25, 50, 75, 100])
+    bins = [0] + list(bins[1:])  # Assurer que le minimum est 0
+
+    def get_color(passages):
+        if passages == 0:
+            return "gray"
+        elif passages <= bins[1]:
+            return "green"
+        elif passages <= bins[2]:
+            return "yellow"
+        elif passages <= bins[3]:
+            return "orange"
+        else:
+            return "red"
+
+    m = folium.Map(
+        location=[df["stop_lat"].mean(), df["stop_lon"].mean()], zoom_start=12
+    )
+
+    for _, row in df.iterrows():
+        stop_id = row["stop_id"]
+        lat = row["stop_lat"]
+        lon = row["stop_lon"]
+        passages = row["nombre_passages"]
+
+        color = get_color(passages)
+
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=2,
+            popup=f"Arrêt ID: {stop_id}\nPassages: {passages}",
+            color=color,
+            fill=True,
+            fill_color=color,
+        ).add_to(m)
+
+    m.save("stops_map.html")
+
+    print("\n✓ Carte des arrêts enregistrée dans : stops_map.html")
+
+
 def main():
     """Fonction principale"""
     print("=" * 70)
@@ -198,6 +245,9 @@ def main():
 
             # Exporter les résultats
             exporter_resultats(resultats, DATE_ANALYSE)
+
+            # Carte des arrêts
+            carte_arrets(resultats)
 
             print("\n✓ Traitement terminé avec succès !")
 
