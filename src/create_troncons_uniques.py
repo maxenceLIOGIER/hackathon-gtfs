@@ -6,7 +6,6 @@ Tronçons par mode de transport, deux sens confondus, à la station parent
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import LineString
-from shapely import wkt
 
 
 def creer_troncons_uniques(feed, route_type):

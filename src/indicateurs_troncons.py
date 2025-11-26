@@ -5,11 +5,9 @@ Basé sur stop_parent_id, tous sens confondus
 
 import pandas as pd
 import numpy as np
-from shapely.geometry import LineString
 import geopandas as gpd
-from shapely import wkt
 
-from src.utils import charger_gtfs, obtenir_service_ids_pour_date
+from utils import charger_gtfs, obtenir_service_ids_pour_date
 
 
 def calculer_distance_haversine(lat1, lon1, lat2, lon2):
@@ -253,10 +251,8 @@ def compute_indicateurs_troncons(
         route_type=0  # Tram
     )
 
-    # indicateurs_bus['geometry'] = indicateurs_bus['geometry'].apply(wkt.loads)
     indicateurs_bus_gdf = gpd.GeoDataFrame(indicateurs_bus, geometry='geometry', crs='EPSG:4326')
 
-    # indicateurs_tram['geometry'] = indicateurs_tram['geometry'].apply(wkt.loads)
     indicateurs_tram_gdf = gpd.GeoDataFrame(indicateurs_tram, geometry='geometry', crs='EPSG:4326')
     
     return indicateurs_bus_gdf, indicateurs_tram_gdf
@@ -269,7 +265,8 @@ def compute_indicateurs_troncons(
 
 if __name__ == "__main__":
     from create_troncons_uniques import creer_troncons_uniques
-    from utils import exporter_geojson, exporter_df_to_csv, exporter_gdf_to_csv
+    from utils import exporter_geojson, exporter_gdf_to_csv
+
     date_calcul = '20251123'
 
     # Charger le GTFS
