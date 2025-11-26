@@ -260,13 +260,11 @@ def compute_indicateurs_troncons(
         feed, reference_troncons_uniques_tram, active_service_ids, route_type=0  # Tram
     )
 
-    # Convertir les géométries WKT en objets Shapely
-    indicateurs_bus["geometry"] = indicateurs_bus["geometry"].apply(wkt.loads)
+    # Convertir en GeoDataFrame
     indicateurs_bus_gdf = gpd.GeoDataFrame(
         indicateurs_bus, geometry="geometry", crs="EPSG:4326"
     )
 
-    indicateurs_tram["geometry"] = indicateurs_tram["geometry"].apply(wkt.loads)
     indicateurs_tram_gdf = gpd.GeoDataFrame(
         indicateurs_tram, geometry="geometry", crs="EPSG:4326"
     )

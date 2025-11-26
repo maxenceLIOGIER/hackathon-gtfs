@@ -94,7 +94,7 @@ uv sync  # cette commande permettra à uv de récupérer les dépendances néces
 ### Exécution locale — scripts Python depuis la racine du projet
 
 Vous pouvez directement utiliser les fonctions depuis la racine du projet. Par exemple, pour créer les tronçons et les exporter en csv, il suffit d'exécuter la commande suivante :  
-``uv run src/create_troncons_uniques.py``  
+``uv run -m src.create_troncons_uniques``  
 Par défaut, le traitement ne génère que des fichiers csv
 
 Le traitement produira les exports tableur et géospatiaux dans le dossier ``output/``.

@@ -37,26 +37,8 @@ def charger_ou_calculer_troncons(feed, route_type, nom_mode):
         # Calculer les tronçons uniques
         troncons_gdf = creer_troncons_uniques(feed, route_type)
 
-        # Convertir en DataFrame avec les colonnes attendues
-        troncons = pd.DataFrame(
-            {
-                "troncon_unique_id": troncons_gdf["troncon_unique_id"],
-                "stop_depart_parent_id": troncons_gdf["stop_depart_parent_id"],
-                "stop_arrivee_parent_id": troncons_gdf["stop_arrivee_parent_id"],
-                "stop_depart_name": troncons_gdf["stop_depart_name"],
-                "stop_arrivee_name": troncons_gdf["stop_arrivee_name"],
-                "lat_depart_parent": troncons_gdf["lat_depart_parent"],
-                "lon_depart_parent": troncons_gdf["lon_depart_parent"],
-                "lat_arrivee_parent": troncons_gdf["lat_arrivee_parent"],
-                "lon_arrivee_parent": troncons_gdf["lon_arrivee_parent"],
-                "geometry": troncons_gdf["geometry"].apply(
-                    lambda x: x.wkt if x is not None else None
-                ),
-            }
-        )
-
-        st.success(f"✅ {len(troncons)} tronçons {nom_mode} calculés automatiquement")
-        return troncons
+        st.success(f"✅ {len(troncons_gdf)} tronçons {nom_mode} calculés automatiquement")
+        return troncons_gdf
 
     except Exception as e:
         st.error(f"❌ Erreur lors du calcul automatique des tronçons {nom_mode}: {e}")
@@ -92,6 +74,8 @@ def troncons_page():
 
             with st.spinner("Chargement/Calcul des tronçons de référence..."):
                 # Calculer automatiquement les tronçons pour bus et tram
+                # df_troncons_uniques_bus = creer_troncons_uniques(st.session_state.feed, route_type=3)
+                # df_troncons_uniques_tram = creer_troncons_uniques(st.session_state.feed, route_type=0)
                 troncons_bus = charger_ou_calculer_troncons(
                     st.session_state.feed, route_type=3, nom_mode="Bus"
                 )
@@ -105,6 +89,7 @@ def troncons_page():
 
             with st.spinner("Calcul des indicateurs de tronçons..."):
                 try:
+
                     indicateurs_bus, indicateurs_tram = compute_indicateurs_troncons(
                         st.session_state.feed,
                         st.session_state.active_service_ids,
