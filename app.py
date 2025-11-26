@@ -8,8 +8,9 @@ import tempfile
 import streamlit as st
 import streamlit.components.v1 as components
 
-from src.arrets import calculer_indicateurs_arrets, carte_arrets
-from src.utils import charger_gtfs
+from src.arrets import calculer_indicateurs_arrets
+from src.cartographie import create_carte_arrets
+from src.utils import charger_gtfs, obtenir_service_ids_pour_date
 
 # Interface Streamlit
 st.title("Analyse GTFS - Indicateurs par Arrêt")
@@ -35,7 +36,8 @@ if uploaded_file is not None and date_selected is not None:
 
         # Calculer les indicateurs
         with st.spinner("Calcul des indicateurs..."):
-            indicateurs = calculer_indicateurs_arrets(feed, date_str)
+            active_service_ids = obtenir_service_ids_pour_date(feed, date_str)  # Juste pour vérifier les services actifs
+            indicateurs = calculer_indicateurs_arrets(feed, active_service_ids, date_str)
 
         if indicateurs is not None:
             st.success("Analyse terminée !")
@@ -52,7 +54,7 @@ if uploaded_file is not None and date_selected is not None:
 
             # Carte
             st.header("Carte des Arrêts")
-            m = carte_arrets(indicateurs)
+            m = create_carte_arrets(indicateurs)
             components.html(m._repr_html_(), height=500, width=1000)
 
             # Télécharger les résultats
