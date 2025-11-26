@@ -32,14 +32,14 @@ def home_page():
     ### Fonctionnalités disponibles :
 
     #### 📍 **Analyse par Arrêts**
-    - Fréquentation par arrêt
-    - Cartographie interactive des arrêts
+    - Nombre de passages par arrêt
+    - Carte interactive des arrêts
     - Statistiques détaillées
 
     #### 🛤️ **Analyse par Tronçons**
-    - Fréquentation par tronçon (bus, tram, métro, etc.)
+    - Nombre de passages par tronçon (bus, tram, métro, etc.)
     - Calcul des vitesses moyennes
-    - Cartographie interactive des tronçons
+    - Carte interactive des tronçons
     - ⚠️ **Actuellement limité au réseau de Montpellier**
 
     ### Instructions :

@@ -3,6 +3,7 @@ Calcul de la fréquentation et vitesse moyenne par tronçon unique
 Basé sur stop_parent_id, tous sens confondus
 """
 
+from shapely import wkt
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -265,7 +266,7 @@ def compute_indicateurs_troncons(
         indicateurs_bus, geometry="geometry", crs="EPSG:4326"
     )
 
-    # indicateurs_tram['geometry'] = indicateurs_tram['geometry'].apply(wkt.loads)
+    indicateurs_tram["geometry"] = indicateurs_tram["geometry"].apply(wkt.loads)
     indicateurs_tram_gdf = gpd.GeoDataFrame(
         indicateurs_tram, geometry="geometry", crs="EPSG:4326"
     )

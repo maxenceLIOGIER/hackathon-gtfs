@@ -125,7 +125,8 @@ def creer_troncons_uniques(feed, route_type):
         lambda row: LineString([
             (row['lon_depart_parent'], row['lat_depart_parent']),
             (row['lon_arrivee_parent'], row['lat_arrivee_parent'])
-        ]) if pd.notna(row['lon_depart_parent']) else None,
+        ]) if all(pd.notna([row['lon_depart_parent'], row['lat_depart_parent'], 
+                           row['lon_arrivee_parent'], row['lon_arrivee_parent']])) else None,
         axis=1
     )
     
