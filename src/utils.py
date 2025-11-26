@@ -82,10 +82,70 @@ def obtenir_service_ids_pour_date(feed, date_str):
 ########################################################################
 
 
-def read_csv_as_geodataframe(filepath):
-    """Lit un fichier CSV avec une colonne 'geometry' en GeoDataFrame
-    Retourne un Geodataframe"""
-    df = pd.read_csv(filepath)
-    df['geometry'] = df['geometry'].apply(wkt.loads)
-    gpd_df = gpd.GeoDataFrame(df, geometry='geometry')
-    return gpd_df
+def exporter_df_to_csv(df, chemin_fichier):
+    """
+    Exporte un DataFrame en CSV
+    
+    Parameters:
+    -----------
+    df : DataFrame
+        DataFrame à exporter
+    chemin_fichier : str
+        Chemin du fichier de sortie
+    """
+    df.to_csv(chemin_fichier, index=False, encoding='utf-8-sig')
+    print(f"✓ CSV exporté : {chemin_fichier}")
+    
+def exporter_gdf_to_csv(gdf, chemin_fichier):
+    """
+    Exporte un GeoDataFrame en CSV sans la geometry
+    
+    Parameters:
+    -----------
+    gdf : GeoDataFrame
+        GeoDataFrame à exporter
+    chemin_fichier : str
+        Chemin du fichier de sortie
+    """
+    df = gdf.drop(columns=['geometry'], errors='ignore')
+    df.to_csv(chemin_fichier, index=False, encoding='utf-8-sig')
+    print(f"✓ CSV exporté : {chemin_fichier}")
+
+
+def exporter_geojson(gdf, chemin_fichier):
+    """
+    Exporte un GeoDataFrame en GeoJSON.
+    
+    Parameters:
+    -----------
+    gdf : GeoDataFrame
+        GeoDataFrame à exporter
+    chemin_fichier : str
+        Chemin du fichier de sortie
+    """
+    gdf.to_file(chemin_fichier, driver='GeoJSON')
+    print(f"✓ GeoJSON exporté : {chemin_fichier}")
+
+
+def charger_csv_avec_geometrie(chemin_fichier):
+    """
+    Charge un CSV contenant une colonne 'geometry' en WKT et retourne un GeoDataFrame.
+    
+    Parameters:
+    -----------
+    chemin_fichier : str
+        Chemin du fichier CSV
+    
+    Returns:
+    --------
+    GeoDataFrame
+    """
+    df = pd.read_csv(chemin_fichier)
+    
+    if 'geometry' in df.columns:
+        df['geometry'] = df['geometry'].apply(wkt.loads)
+        gdf = gpd.GeoDataFrame(df, geometry='geometry', crs='EPSG:4326')
+    else:
+        gdf = gpd.GeoDataFrame(df, crs='EPSG:4326')
+    
+    return gdf

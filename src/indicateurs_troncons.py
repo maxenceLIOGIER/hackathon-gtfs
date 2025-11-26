@@ -6,8 +6,10 @@ Basé sur stop_parent_id, tous sens confondus
 import pandas as pd
 import numpy as np
 from shapely.geometry import LineString
+import geopandas as gpd
+from shapely import wkt
 
-from utils import charger_gtfs, obtenir_service_ids_pour_date
+from src.utils import charger_gtfs, obtenir_service_ids_pour_date
 
 
 def calculer_distance_haversine(lat1, lon1, lat2, lon2):
@@ -214,103 +216,50 @@ def calculer_frequentation_troncons(feed, df_troncons_uniques, service_ids, rout
     
     return df_resultat
 
-def afficher_statistiques_frequentation(df, date_str):
-    """Affiche les statistiques de fréquentation"""
-    print("\n" + "="*70)
-    print(f"STATISTIQUES DE FRÉQUENTATION - {date_str}")
-    print("="*70)
-    
-    df_actifs = df[df['nombre_passages'] > 0]
-    
-    print(f"Nombre total de tronçons : {len(df)}")
-    print(f"Tronçons avec passages : {len(df_actifs)}")
-    print(f"Nombre total de passages : {df_actifs['nombre_passages'].sum():,}")
-    print(f"Moyenne de passages par tronçon actif : {df_actifs['nombre_passages'].mean():.1f}")
-    print(f"Médiane de passages : {df_actifs['nombre_passages'].median():.0f}")
-    
-    if len(df_actifs) > 0:
-        print(f"\nDistance moyenne : {df_actifs['distance_km'].mean():.2f} km")
-        print(f"Vitesse moyenne : {df_actifs['vitesse_moyenne_kmh'].mean():.1f} km/h")
-        print(f"Vitesse médiane : {df_actifs['vitesse_moyenne_kmh'].median():.1f} km/h")
-        
-        print("\n" + "="*70)
-        print("TOP 10 - TRONÇONS LES PLUS FRÉQUENTÉS")
-        print("="*70)
-        top = df_actifs.head(10)[[
-            'troncon_unique_id', 'stop_depart_name', 'stop_arrivee_name',
-            'nombre_passages', 'vitesse_moyenne_kmh', 'distance_km'
-        ]].copy()
-        top['vitesse_moyenne_kmh'] = top['vitesse_moyenne_kmh'].round(1)
-        top['distance_km'] = top['distance_km'].round(2)
-        print(top.to_string(index=False))
-        
-        print("\n" + "="*70)
-        print("TOP 10 - TRONÇONS LES PLUS RAPIDES (avec min 10 passages)")
-        print("="*70)
-        df_min_passages = df_actifs[df_actifs['nombre_passages'] >= 10]
-        if len(df_min_passages) > 0:
-            top_rapides = df_min_passages.nlargest(10, 'vitesse_moyenne_kmh')[[
-                'troncon_unique_id', 'stop_depart_name', 'stop_arrivee_name',
-                'vitesse_moyenne_kmh', 'distance_km', 'nombre_passages'
-            ]].copy()
-            top_rapides['vitesse_moyenne_kmh'] = top_rapides['vitesse_moyenne_kmh'].round(1)
-            top_rapides['distance_km'] = top_rapides['distance_km'].round(2)
-            print(top_rapides.to_string(index=False))
-
-
-def exporter_resultats_frequentation(df, date_str, prefixe='indicateurs_troncons'):
-    """Exporte les résultats"""
-    output_csv = f"output/{prefixe}_{date_str}.csv"
-    # df_export = df.drop(columns=['geometry'], errors='ignore')
-    df_export = df
-    df_export.to_csv(output_csv, index=False, encoding='utf-8-sig')
-    print(f"\n✓ Résultats exportés : {output_csv}")
-    return output_csv
-
 
 def compute_indicateurs_troncons(
         feed,
-        date: str,
+        active_service_ids: list[str],
         reference_troncons_uniques_bus: pd.DataFrame,
-        reference_troncons_uniques_tram: pd.DataFrame,
-        export_resutls: bool = False,
+        reference_troncons_uniques_tram: pd.DataFrame
     ):
     """
     Réalise le calcul des indicateurs par tronçon pour une date d'analyse donnée
     Args:
         feed: gtfs_kit Feed object
             Le feed GTFS chargé
-        date (str): Date d'analyse au format YYYYMMDD
+        active_service_ids: list[str]: Liste des services actifs à la date choisie
         reference_troncons_uniques_bus (pd.DataFrame):
             Table des tronçons uniques bus
         reference_troncons_uniques_tram (pd.DataFrame):
             Table des tronçons uniques tram
-    """
     
-    # Obtenir les services actifs
-    service_ids = obtenir_service_ids_pour_date(feed, date)
+    Returns:
+        Tuple de GeoDataFrame : (indicateurs_bus, indicateurs_tram)
+    """
     
     # Calculer la fréquentation
     indicateurs_bus = calculer_frequentation_troncons(
         feed, 
         reference_troncons_uniques_bus, 
-        service_ids,
+        active_service_ids,
         route_type=3  # Bus
     )
 
     indicateurs_tram = calculer_frequentation_troncons(
         feed, 
         reference_troncons_uniques_tram, 
-        service_ids,
+        active_service_ids,
         route_type=0  # Tram
     )
+
+    # indicateurs_bus['geometry'] = indicateurs_bus['geometry'].apply(wkt.loads)
+    indicateurs_bus_gdf = gpd.GeoDataFrame(indicateurs_bus, geometry='geometry', crs='EPSG:4326')
+
+    # indicateurs_tram['geometry'] = indicateurs_tram['geometry'].apply(wkt.loads)
+    indicateurs_tram_gdf = gpd.GeoDataFrame(indicateurs_tram, geometry='geometry', crs='EPSG:4326')
     
-    if indicateurs_bus is not None and export_resutls:
-        exporter_resultats_frequentation(indicateurs_bus, date, prefixe='indicateurs_troncons_bus')
-    if indicateurs_tram is not None and export_resutls:
-        exporter_resultats_frequentation(indicateurs_tram, date, prefixe='indicateurs_troncons_tram')
-    
-    return indicateurs_bus, indicateurs_tram
+    return indicateurs_bus_gdf, indicateurs_tram_gdf
 
 
 
@@ -319,21 +268,31 @@ def compute_indicateurs_troncons(
 # =============================================================================
 
 if __name__ == "__main__":
-
+    from create_troncons_uniques import creer_troncons_uniques
+    from utils import exporter_geojson, exporter_df_to_csv, exporter_gdf_to_csv
     date_calcul = '20251123'
 
     # Charger le GTFS
     print("Chargement du GTFS...")
     feed = charger_gtfs()
+    active_service_ids = obtenir_service_ids_pour_date(feed, date_calcul)
     
     # Charger la table des tronçons uniques
-    df_troncons_uniques_bus = pd.read_csv("output/troncons_uniques_bus.csv")
-    df_troncons_uniques_tram = pd.read_csv("output/troncons_uniques_tram.csv")
+    df_troncons_uniques_bus = creer_troncons_uniques(feed, route_type=3)
+    df_troncons_uniques_tram = creer_troncons_uniques(feed, route_type=0)
     
+    # Calcul des indicateurs
     indicateurs_bus, indicateurs_tram = compute_indicateurs_troncons(
         feed,
-        date_calcul,
+        active_service_ids,
         df_troncons_uniques_bus,
-        df_troncons_uniques_tram,
-        export_resutls=True
+        df_troncons_uniques_tram
     )
+
+    # Export en csv
+    exporter_gdf_to_csv(indicateurs_bus, f'output/indicateurs_troncons_bus_{date_calcul}.csv')
+    exporter_gdf_to_csv(indicateurs_tram, f'output/indicateurs_troncons_tram_{date_calcul}.csv')
+
+    # Export en geojson
+    exporter_geojson(indicateurs_bus, f'output/indicateurs_troncons_bus_{date_calcul}.geojson')
+    exporter_geojson(indicateurs_tram, f'output/indicateurs_troncons_tram_{date_calcul}.geojson')
